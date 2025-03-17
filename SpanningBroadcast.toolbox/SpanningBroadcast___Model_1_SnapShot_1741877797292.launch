@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<launchConfiguration type="org.lamport.tla.toolbox.tool.tlc.modelCheck">
+    <stringAttribute key="configurationName" value="Model_1_SnapShot_1741877797292"/>
+    <intAttribute key="distributedFPSetCount" value="0"/>
+    <stringAttribute key="distributedNetworkInterface" value="192.168.0.225"/>
+    <intAttribute key="distributedNodesCount" value="1"/>
+    <stringAttribute key="distributedTLC" value="off"/>
+    <intAttribute key="fpIndex" value="35"/>
+    <intAttribute key="maxHeapSize" value="25"/>
+    <stringAttribute key="modelBehaviorInit" value="TCInit"/>
+    <stringAttribute key="modelBehaviorNext" value="TCNext"/>
+    <stringAttribute key="modelBehaviorSpec" value=""/>
+    <intAttribute key="modelBehaviorSpecType" value="0"/>
+    <stringAttribute key="modelBehaviorVars" value="configuration"/>
+    <stringAttribute key="modelComments" value=""/>
+    <booleanAttribute key="modelCorrectnessCheckDeadlock" value="true"/>
+    <listAttribute key="modelCorrectnessInvariants"/>
+    <listAttribute key="modelCorrectnessProperties"/>
+    <intAttribute key="modelEditorOpenTabs" value="8"/>
+    <stringAttribute key="modelExpressionEval" value="\neg (\E p \in P : PARENT[p] = {} /\ CHILDREN[p] = {})"/>
+    <listAttribute key="modelParameterConstants">
+        <listEntry value="P;;{&quot;p1&quot;, &quot;p2&quot;, &quot;p3&quot;};0;0"/>
+        <listEntry value="ROOT;;{&quot;p1&quot;};0;0"/>
+        <listEntry value="CHILDREN;;[p1 |-&gt; {&quot;p2&quot;, &quot;p3&quot;}, p2 |-&gt; {}, p3 |-&gt; {}];0;0"/>
+        <listEntry value="PARENT;;[p1 |-&gt; {}, p2 |-&gt; {&quot;p1&quot;}, p3 |-&gt; {&quot;p1&quot;}];0;0"/>
+    </listAttribute>
+    <intAttribute key="modelVersion" value="20191005"/>
+    <intAttribute key="numberOfWorkers" value="6"/>
+    <stringAttribute key="result.mail.address" value=""/>
+    <stringAttribute key="specName" value="SpanningBroadcast"/>
+    <stringAttribute key="tlcResourcesProfile" value="local custom"/>
+</launchConfiguration>
