@@ -20,3 +20,11 @@ ROOT <- {"p1"}
 CHILDREN <- [p1 |-> {"p2", "p3"}, p2 |-> {}, p3 |-> {}]
 PARENT <- [p1 |-> {}, p2 |-> {"p1"}, p3 |-> {"p1"}]
 ```
+
+## Overall Idea
+
+The intuiton is to have three kind of actions:
+1. Sending a message from process `p` to `q`
+2. Computing a message in process `p` which consists of two parts:
+    1. Transfer message from input buffer of local process to output buffer of each child
+    2. Mark process as terminated once all output buffers of the children are filled.
