@@ -13,39 +13,37 @@ VARIABLE  configuration  \* configuration[p] is the state of process p.
 
 \* Definitions for testing purposes
 TestInitState == [ p1 |->
-         <<{}, {"p2", "p3"}, TRUE, [p1 |-> FALSE, p2 |-> TRUE, p3 |-> TRUE]>>,
+         <<{}, {"p2", "p3"}, TRUE, [p1 |-> FALSE, p2 |-> FALSE, p3 |-> FALSE], TRUE>>,
      p2 |->
          << {"p1", "p2"},
             {},
             FALSE,
-            [p1 |-> FALSE, p2 |-> FALSE, p3 |-> FALSE] >>,
-     p3 |-> <<{}, {}, FALSE, [p1 |-> FALSE, p2 |-> FALSE, p3 |-> FALSE]>> ]
+            [p1 |-> FALSE, p2 |-> FALSE, p3 |-> FALSE], FALSE >>,
+     p3 |-> <<{}, {}, FALSE, [p1 |-> FALSE, p2 |-> FALSE, p3 |-> FALSE], FALSE>> ]
      
-TestDef1 == \E p \in P : TestInitState[p] = <<{}, {"p2", "p3"}, TRUE, [p1 |-> FALSE, p2 |-> TRUE, p3 |-> TRUE]>>
-TestDef2 == TestInitState["p1"][4] = [p1 |-> FALSE, p2 |-> TRUE, p3 |-> TRUE]
-TestDef3 == TestInitState["p1"][4]["p1"] = FALSE
-
 \* QinOutbufP(p,q) is true if process p's output buffer is true for process q.
 QinOutbufOfP(p,q) == configuration[p][4][q]
 
-ParentType == P
-ChildrenType == (SUBSET P)
+ParentType == (SUBSET P) \* empty set only in the case of root and singleton set otherwise
+ChildrenType == (SUBSET P) \* empty in the case of leaves and non-empty otherwise.
 TerminatedType == BOOLEAN
 OutbufType == [P -> BOOLEAN]
+InbufType == BOOLEAN
 
-\* Initial value of the output buffer. It assigns true to the children of the root, denoting a message to be sent to each child.
-InitOutbufType(p) == 
-    IF p \in ROOT
-    THEN [q \in P  |-> IF q \in CHILDREN[p] THEN TRUE ELSE FALSE]
-    ELSE [p1 |-> FALSE, p2 |-> FALSE, p3 |-> FALSE]
+\* Initial value of the input buffer. It assigns true to the children of the root, denoting a message to be sent to each child.
 
-\* Initial value of the TerminatedType. We assume that the root starts in a terminated state, since the output buffer for each child is set with a message.
-InitTerminatedType(p) == 
+InitInbufType(p) == 
     IF p \in ROOT
-    THEN TRUE
-    ELSE FALSE
+        THEN TRUE
+        ELSE FALSE
+        
+\* Initial value of the output buffer is FALSE for all.
+InitOutbufType == [q \in P |-> FALSE]
+
+\* Initial value of the TerminatedType.
+InitTerminatedType == FALSE
     
-\*  Terminated(p) == configuration[p][3]
+\* Terminated(p) == configuration[p][3]
  
 \*Leaves == {p \in P : CHILDREN[p] = {}} \* Not used
 
@@ -53,7 +51,7 @@ TCTypeOK ==
   (*************************************************************************)
   (* The type-correctness invariant                                        *)
   (*************************************************************************)
-    /\ configuration \in [P -> ParentType \X ChildrenType \X TerminatedType \X OutbufType]
+    /\ configuration \in [P -> ParentType \X ChildrenType \X TerminatedType \X OutbufType \X InbufType]
     /\ \A p \in P : ((PARENT[p] \intersect CHILDREN[p]) = {}) \* Spanning tree must have no cycles
     /\ \A p \in P : ( p \in ROOT => PARENT[p] = {}) \* Root has no parent
     /\ \neg (\E p \in P : PARENT[p] = {} /\ CHILDREN[p] = {}) \* No disconnected nodes.
@@ -65,24 +63,25 @@ TCInit ==
   (*************************************************************************)
   (* The initial predicate.                                                *)
   (*************************************************************************)
-    configuration = [p \in P |-> <<PARENT[p], CHILDREN[p], InitTerminatedType(p), InitOutbufType(p)>>]
+    configuration = [p \in P |-> <<PARENT[p], CHILDREN[p], InitTerminatedType, InitOutbufType, InitInbufType(p)>>]
 
-canSendAndCompute == \E p,q \in P : QinOutbufOfP(p,q) /\ q \in CHILDREN[p]
+SendFromPToQ(p,q) ==  
+    /\ QinOutbufOfP(p,q) = TRUE
+    /\ configuration' = [configuration EXCEPT ![q][3] = TRUE, ![p][4][q] = FALSE]
 
-SendFromPToQAndComputeInQ(p,q,r) ==  
+\* If an input buffer has a message, then mark a corresponding child's output buffer in the parent's node as TRUE
+Compute(p,q) ==     
+  
+    /\ configuration[p][5] = TRUE /\ q \in CHILDREN[p] /\ configuration[p][4][q] = FALSE
+    /\ configuration' = [configuration EXCEPT ![p][4][q] = TRUE]
+                    
+\* If all children in the output buffer are TRUE, then mark the inbuf buffer as FALSE and terminated as FALSE.
+MarkTerminated(p) == /\ \A q \in CHILDREN[p]: configuration[p][4][q] = TRUE
+                     /\ configuration' = [configuration EXCEPT ![p][5] = FALSE, ![p][3] = FALSE]
 
-      /\ QinOutbufOfP(p,q) = TRUE
-      /\ configuration' = [configuration EXCEPT ![q][3] = TRUE, ![p][4][q] = FALSE, ![q][4][r] = TRUE]
-
-TCNext ==  
-  (*************************************************************************)
-  (* The next-state action.                                                *)
-  (*************************************************************************)
-
-      /\ canSendAndCompute
-      /\ \E p,q \in P : \A r \in CHILDREN[q]: SendFromPToQAndComputeInQ(p,q,r)
+TCNext == \E p,q \in P : Compute(p,q) \/ MarkTerminated(p) \/ SendFromPToQ(p,q)
 
 =============================================================================
 \* Modification History
-\* Last modified Mon Mar 17 16:21:33 IST 2025 by stanly
+\* Last modified Mon Mar 17 21:38:30 IST 2025 by stanly
 \* Created Thu Mar 06 16:45:20 IST 2025 by stanly
