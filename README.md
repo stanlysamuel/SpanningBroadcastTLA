@@ -18,5 +18,5 @@ A possible instantiation of the above parameters for the model is shown below:
 P <- {"p1", "p2", "p3"}
 ROOT <- {"p1"}
 CHILDREN <- [p1 |-> {"p2", "p3"}, p2 |-> {}, p3 |-> {}]
-PARENT <- [p1 |-> {}, p2 |-> {"p1", "p2"}, p3 |-> {}]
+PARENT <- [p1 |-> {}, p2 |-> {"p1"}, p3 |-> {"p1"}]
 ```
