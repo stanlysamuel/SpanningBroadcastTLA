@@ -11,31 +11,61 @@ CONSTANT P, ROOT, CHILDREN, PARENT      \* The set of participating processes, t
 VARIABLE  configuration  \* configuration[p] is the state of process p.
 -----------------------------------------------------------------------------
 
+\* BEGIN: Definitions for testing purposes
+TestInitState == [  p1 |->
+         <<{}, {"p2", "p3"}, TRUE, [p1 |-> FALSE, p2 |-> FALSE, p3 |-> FALSE], TRUE>>,
+                    p2 |->
+         << {"p1", "p2"}, {}, FALSE, [p1 |-> FALSE, p2 |-> FALSE, p3 |-> FALSE], FALSE >>,
+                    p3 |-> 
+         <<{}, {}, FALSE, [p1 |-> FALSE, p2 |-> FALSE, p3 |-> FALSE], FALSE>> ]
+     
+TestDef1 == \E p \in P : TestInitState[p] = <<{}, {"p2", "p3"}, TRUE, [p1 |-> FALSE, p2 |-> TRUE, p3 |-> TRUE], TRUE>>
+TestDef2 == TestInitState["p1"][4] = [p1 |-> FALSE, p2 |-> TRUE, p3 |-> TRUE]
+TestDef3 == TestInitState["p1"][4]["p1"] = FALSE
+\* END: Definitions for testing purposes
+
+(***************************************************************************)
+(* Types (denoting the state of each process) *)
+(***************************************************************************)
+
 ParentType == (SUBSET P) \* empty set only in the case of root and singleton set otherwise
 ChildrenType == (SUBSET P) \* empty in the case of leaves and non-empty otherwise.
 TerminatedType == BOOLEAN
 OutbufType == [P -> BOOLEAN]
 InbufType == BOOLEAN
 
-\* Initial value of the input buffer. It assigns true to the children of the root, denoting a message to be sent to each child.
+(***************************************************************************)
+(* Initial values of each type *)
+(***************************************************************************)
+   
+\* Initial value of the ParentType.
+InitParentType(p) == PARENT[p]
+     
+\* Initial value of the ChildrenType.
+InitChildrenType(p) == CHILDREN[p]
 
+\* Initial value of the TerminatedType.
+InitTerminatedType == FALSE
+
+\* Initial value of the output buffer is FALSE for all.
+InitOutbufType == [q \in P |-> FALSE]
+
+\* Initial value of the input buffer. It assigns true to the input buffer of the root, and false for the rest.
 InitInbufType(p) == 
     IF p \in ROOT
         THEN TRUE
         ELSE FALSE
         
-\* Initial value of the output buffer is FALSE for all.
-InitOutbufType == [q \in P |-> FALSE]
+(***************************************************************************)
+(* Definitions for a given process p (for reference) *)
+(***************************************************************************)
 
-\* Initial value of the TerminatedType.
-InitTerminatedType == FALSE
-    
-\* QinOutbufP(p,q) is true if process p's output buffer is true for process q.
-\* QinOutbufOfP(p,q) == configuration[p][4][q] \* Not used
-
-\* Terminated(p) == configuration[p][3] \* Not used
- 
-\*Leaves == {p \in P : CHILDREN[p] = {}} \* Not used
+Parent(p) == configuration[p][1]
+Children(p) == configuration[p][2]
+Terminated(p) == configuration[p][3]
+Outbuf(p) == configuration[p][4]
+Inbuf(p) == configuration[p][5]
+OutbufQinP(p,q) == configuration[p][4][q] \* OutbufQinP(p,q) is true if process p has a message for process in q in the respective output buffer.
 
 TCTypeOK == 
   (*************************************************************************)
@@ -53,10 +83,14 @@ TCInit ==
   (*************************************************************************)
   (* The initial predicate.                                                *)
   (*************************************************************************)
-    configuration = [p \in P |-> <<PARENT[p], CHILDREN[p], InitTerminatedType, InitOutbufType, InitInbufType(p)>>]
+    configuration = [p \in P |-> <<InitParentType(p), InitChildrenType(p) , InitTerminatedType, InitOutbufType, InitInbufType(p)>>]
 
+
+(*************************************************************************)
+(* Actions                                                               *)
+(*************************************************************************)
+  
 SendFromPToQ(p,q) ==  
-
     /\ configuration[p][4][q] = TRUE \* outbuf[p][q] is TRUE
     /\ configuration' = 
         [configuration EXCEPT   ![q][5] = TRUE, \* inbuf[q] is TRUE
@@ -71,13 +105,13 @@ Compute(p) == /\ configuration[p][5] = TRUE \* input buffer for p is true
                                                 ELSE FALSE], \* Store message in each output buffer of process p.
                         ![p][3] = TRUE, \* Mark p as terminated
                         ![p][5] = FALSE] \* Mark input buffer as empty
-                        
+
+TCNext ==
   (*************************************************************************)
   (* The next-state action.                                                *)
   (*************************************************************************)
-TCNext == \E p,q \in P : Compute(p) \/ SendFromPToQ(p,q)
-
+            \E p,q \in P : Compute(p) \/ SendFromPToQ(p,q)
 =============================================================================
 \* Modification History
-\* Last modified Tue Mar 18 14:36:47 IST 2025 by stanly
+\* Last modified Tue Mar 18 17:08:40 IST 2025 by stanly
 \* Created Thu Mar 06 16:45:20 IST 2025 by stanly
