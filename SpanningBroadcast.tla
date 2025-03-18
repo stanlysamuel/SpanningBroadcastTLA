@@ -11,19 +11,6 @@ CONSTANT P, ROOT, CHILDREN, PARENT      \* The set of participating processes, t
 VARIABLE  configuration  \* configuration[p] is the state of process p.
 -----------------------------------------------------------------------------
 
-\* Definitions for testing purposes
-TestInitState == [ p1 |->
-         <<{}, {"p2", "p3"}, TRUE, [p1 |-> FALSE, p2 |-> FALSE, p3 |-> FALSE], TRUE>>,
-     p2 |->
-         << {"p1", "p2"},
-            {},
-            FALSE,
-            [p1 |-> FALSE, p2 |-> FALSE, p3 |-> FALSE], FALSE >>,
-     p3 |-> <<{}, {}, FALSE, [p1 |-> FALSE, p2 |-> FALSE, p3 |-> FALSE], FALSE>> ]
-     
-\* QinOutbufP(p,q) is true if process p's output buffer is true for process q.
-QinOutbufOfP(p,q) == configuration[p][4][q]
-
 ParentType == (SUBSET P) \* empty set only in the case of root and singleton set otherwise
 ChildrenType == (SUBSET P) \* empty in the case of leaves and non-empty otherwise.
 TerminatedType == BOOLEAN
@@ -43,7 +30,10 @@ InitOutbufType == [q \in P |-> FALSE]
 \* Initial value of the TerminatedType.
 InitTerminatedType == FALSE
     
-\* Terminated(p) == configuration[p][3]
+\* QinOutbufP(p,q) is true if process p's output buffer is true for process q.
+\* QinOutbufOfP(p,q) == configuration[p][4][q] \* Not used
+
+\* Terminated(p) == configuration[p][3] \* Not used
  
 \*Leaves == {p \in P : CHILDREN[p] = {}} \* Not used
 
@@ -66,22 +56,28 @@ TCInit ==
     configuration = [p \in P |-> <<PARENT[p], CHILDREN[p], InitTerminatedType, InitOutbufType, InitInbufType(p)>>]
 
 SendFromPToQ(p,q) ==  
-    /\ QinOutbufOfP(p,q) = TRUE
-    /\ configuration' = [configuration EXCEPT ![q][3] = TRUE, ![p][4][q] = FALSE]
+
+    /\ configuration[p][4][q] = TRUE \* outbuf[p][q] is TRUE
+    /\ configuration' = 
+        [configuration EXCEPT   ![q][5] = TRUE, \* inbuf[q] is TRUE
+                                ![p][4][q] = FALSE] \* outbuf[p][q] is false
 
 \* If an input buffer has a message, then mark a corresponding child's output buffer in the parent's node as TRUE
-Compute(p,q) ==     
-  
-    /\ configuration[p][5] = TRUE /\ q \in CHILDREN[p] /\ configuration[p][4][q] = FALSE
-    /\ configuration' = [configuration EXCEPT ![p][4][q] = TRUE]
-                    
-\* If all children in the output buffer are TRUE, then mark the inbuf buffer as FALSE and terminated as FALSE.
-MarkTerminated(p) == /\ \A q \in CHILDREN[p]: configuration[p][4][q] = TRUE
-                     /\ configuration' = [configuration EXCEPT ![p][5] = FALSE, ![p][3] = FALSE]
-
-TCNext == \E p,q \in P : Compute(p,q) \/ MarkTerminated(p) \/ SendFromPToQ(p,q)
+Compute(p) == /\ configuration[p][5] = TRUE \* input buffer for p is true
+                /\ configuration' = 
+                    [configuration EXCEPT 
+                        ![p][4] = [q \in P |-> IF q \in CHILDREN[p] 
+                                                THEN TRUE 
+                                                ELSE FALSE], \* Store message in each output buffer of process p.
+                        ![p][3] = TRUE, \* Mark p as terminated
+                        ![p][5] = FALSE] \* Mark input buffer as empty
+                        
+  (*************************************************************************)
+  (* The next-state action.                                                *)
+  (*************************************************************************)
+TCNext == \E p,q \in P : Compute(p) \/ SendFromPToQ(p,q)
 
 =============================================================================
 \* Modification History
-\* Last modified Mon Mar 17 21:38:30 IST 2025 by stanly
+\* Last modified Tue Mar 18 14:36:47 IST 2025 by stanly
 \* Created Thu Mar 06 16:45:20 IST 2025 by stanly

@@ -23,8 +23,10 @@ PARENT <- [p1 |-> {}, p2 |-> {"p1"}, p3 |-> {"p1"}]
 
 ## Overall Idea
 
-The intuiton is to have three kind of actions:
+Each process has a single input buffer and an output buffer for each child. Since we are dealing with a single message broadcast algorithm, we can consider each buffer to store a Boolean value. Initially, all buffers are set to FALSE, except the input buffer of the ROOT node, which denotes a message to be sent.
+
+The intuiton is to have two kind of actions:
 1. Sending a message from process `p` to `q`
 2. Computing a message in process `p` which consists of two parts:
-    1. Transfer message from input buffer of local process to output buffer of each child
-    2. Mark process as terminated once all output buffers of the children are filled.
+    1. Transfer message from input buffer of `p` to the output buffer of `p` for each child.
+    2. Mark process as terminated.
