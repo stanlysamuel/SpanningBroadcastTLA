@@ -67,7 +67,7 @@ Outbuf(p) == configuration[p][4]
 Inbuf(p) == configuration[p][5]
 OutbufQinP(p,q) == configuration[p][4][q] \* OutbufQinP(p,q) is true if process p has a message for process in q in the respective output buffer.
 
-TCTypeOK == 
+SBTypeOK == 
   (*************************************************************************)
   (* The type-correctness invariant                                        *)
   (*************************************************************************)
@@ -79,7 +79,7 @@ TCTypeOK ==
     /\ \A p \in ROOT : ( p \in P) \* Root must be a member of the spanning tree.
     /\ Cardinality(ROOT) = 1 \* Root must be a singleton set.
         
-TCInit == 
+SBInit == 
   (*************************************************************************)
   (* The initial predicate.                                                *)
   (*************************************************************************)
@@ -91,6 +91,7 @@ TCInit ==
 (*************************************************************************)
   
 SendFromPToQ(p,q) ==  
+
     /\ configuration[p][4][q] = TRUE \* outbuf[p][q] is TRUE
     /\ configuration' = 
         [configuration EXCEPT   ![q][5] = TRUE, \* inbuf[q] is TRUE
@@ -106,12 +107,19 @@ Compute(p) == /\ configuration[p][5] = TRUE \* input buffer for p is true
                         ![p][3] = TRUE, \* Mark p as terminated
                         ![p][5] = FALSE] \* Mark input buffer as empty
 
-TCNext ==
+SBNext ==
   (*************************************************************************)
   (* The next-state action.                                                *)
   (*************************************************************************)
             \E p,q \in P : Compute(p) \/ SendFromPToQ(p,q)
+
+-----------------------------------------------------------------------------
+SBSoundness ==  
+  (*************************************************************************)
+  (* Eventually, all processes recieve the message                         *)
+  (*************************************************************************)
+                <> (\A p \in P: Terminated(p) = TRUE)
 =============================================================================
 \* Modification History
-\* Last modified Tue Mar 18 17:08:40 IST 2025 by stanly
+\* Last modified Tue Mar 18 17:38:58 IST 2025 by stanly
 \* Created Thu Mar 06 16:45:20 IST 2025 by stanly
