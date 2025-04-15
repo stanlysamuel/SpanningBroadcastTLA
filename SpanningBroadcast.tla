@@ -8,22 +8,8 @@ EXTENDS FiniteSets
 
 CONSTANT P, ROOT, CHILDREN, PARENT      \* The set of participating processes, the root, and the spanning tree as a directed graph (CHILDREN, PARENT)
 
-VARIABLE  configuration  \* configuration[p] is the state of process p.
+VARIABLE  configuration \* configuration[p] is the state of process p.
 -----------------------------------------------------------------------------
-
-\* BEGIN: Definitions for testing purposes
-TestInitState == [  p1 |->
-         <<TRUE, [p1 |-> FALSE, p2 |-> FALSE, p3 |-> FALSE], TRUE>>,
-                    p2 |->
-         <<FALSE, [p1 |-> FALSE, p2 |-> FALSE, p3 |-> FALSE], FALSE >>,
-                    p3 |-> 
-         <<FALSE, [p1 |-> FALSE, p2 |-> FALSE, p3 |-> FALSE], FALSE>> ]
-     
-TestDef1 == \E p \in P : TestInitState[p] = <<TRUE, [p1 |-> FALSE, p2 |-> TRUE, p3 |-> TRUE], TRUE>>
-TestDef2 == TestInitState["p1"][2] = [p1 |-> FALSE, p2 |-> TRUE, p3 |-> TRUE]
-TestDef3 == TestInitState["p1"][2]["p1"] = FALSE
-\* END: Definitions for testing purposes
-
 (***************************************************************************)
 (* Types (denoting the state of each process) *)
 (***************************************************************************)
@@ -54,30 +40,41 @@ InitTerminatedType == FALSE
 (* Definitions for a given process p (for reference) *)
 (***************************************************************************)
 
-Inbuf(p) == configuration[p][3]
-Terminated(p) == configuration[p][1]
-Outbuf(p) == configuration[p][2]
-OutbufQinP(p,q) == configuration[p][2][q] \* OutbufQinP(p,q) is true if process p has a message for process in q in the respective output buffer.
+Inbuf(p) == configuration[p].inbuf
+Outbuf(p) == configuration[p].outbuf
+Terminated(p) == configuration[p].terminated
+OutbufQinP(p,q) == configuration[p].outbuf[q] \* OutbufQinP(p,q) is true if process p has a message for process in q in the respective output buffer.
 
+SBConstOK ==
+    (*************************************************************************)
+    (* The type-correctness invariant (constants)                                  *)
+    (*************************************************************************)
+    \*Constraints on P
+    /\ Cardinality(P) # 0 \* The set of processes is not empty
+    
+    \*Constraints on ROOT
+    /\ Cardinality(ROOT) = 1 \* Root must be a singleton set.
+    /\ \A p \in P : ( p \in ROOT => PARENT[p] = {}) \* Root has no parent
+    /\ \A p \in ROOT : ( p \in P) \* Root must be a member of the spanning tree.
+   
+    \*Constraints on PARENT, CHILDREN (not complete, need transitive closure)
+    /\ \A p \in P : PARENT[p] \in ParentType
+    /\ \A p \in P : CHILDREN[p] \in ParentType
+    /\ \A p \in P : ((PARENT[p] \intersect CHILDREN[p]) = {}) \* Spanning tree must have no cycles (weak, need transitive closure).
+    /\ \neg (\E p \in P : PARENT[p] = {} /\ CHILDREN[p] = {}) \* No disconnected nodes (weak, need transitive closure).
+    /\ \A p \in P : (PARENT[p] = {} \/ Cardinality(PARENT[p]) = 1) \* Parent has at most one node
+    
 SBTypeOK == 
   (*************************************************************************)
-  (* The type-correctness invariant                                        *)
+  (* The type-correctness invariant (variables)                                     *)
   (*************************************************************************)
-    /\ configuration \in [P -> InbufType \X OutbufType \X TerminatedType]
-    
-    /\ \A p \in P : ((PARENT[p] \intersect CHILDREN[p]) = {}) \* Spanning tree must have no cycles
-    /\ \A p \in P : ( p \in ROOT => PARENT[p] = {}) \* Root has no parent
-    /\ \neg (\E p \in P : PARENT[p] = {} /\ CHILDREN[p] = {}) \* No disconnected nodes.
-    /\ \A p \in P : (PARENT[p] = {} \/ Cardinality(PARENT[p]) = 1) \* Parent has at most one node
-    /\ \A p \in ROOT : ( p \in P) \* Root must be a member of the spanning tree.
-    /\ Cardinality(ROOT) = 1 \* Root must be a singleton set.
+    /\ configuration \in [P -> [inbuf: InbufType , outbuf: OutbufType , terminated: TerminatedType]]
         
 SBInit == 
   (*************************************************************************)
   (* The initial predicate.                                                *)
   (*************************************************************************)
-    configuration = [p \in P |-> <<InitInbufType(p), InitOutbufType, InitTerminatedType>>]
-
+    configuration = [p \in P |-> [inbuf |-> InitInbufType(p), outbuf |-> InitOutbufType, terminated |-> InitTerminatedType]]
 
 (*************************************************************************)
 (* Actions                                                               *)
@@ -85,20 +82,20 @@ SBInit ==
   
 SendFromPToQ(p,q) ==  
 
-    /\ configuration[p][2][q] = TRUE \* outbuf[p][q] is TRUE
+    /\ configuration[p].outbuf[q] = TRUE \* outbuf[p][q] is TRUE
     /\ configuration' = 
-        [configuration EXCEPT   ![q][1] = TRUE, \* inbuf[q] is TRUE
-                                ![p][2][q] = FALSE] \* outbuf[p][q] is false
+        [configuration EXCEPT   ![q].inbuf = TRUE, \* inbuf[q] is TRUE
+                                ![p].outbuf[q] = FALSE] \* outbuf[p][q] is false
 
 \* If an input buffer has a message, then mark a corresponding child's output buffer in the parent's node as TRUE
-Compute(p) == /\ configuration[p][1] = TRUE \* input buffer for p is true
+Compute(p) == /\ configuration[p].inbuf = TRUE \* input buffer for p is true
                 /\ configuration' = 
                     [configuration EXCEPT 
-                        ![p][2] = [q \in P |-> IF q \in CHILDREN[p] 
+                        ![p].outbuf = [q \in P |-> IF q \in CHILDREN[p] 
                                                 THEN TRUE 
                                                 ELSE FALSE], \* Store message in each output buffer of process p.
-                        ![p][3] = TRUE, \* Mark p as terminated
-                        ![p][1] = FALSE] \* Mark input buffer as empty
+                        ![p].terminated = TRUE, \* Mark p as terminated
+                        ![p].inbuf = FALSE] \* Mark input buffer as empty
 
 SBNext ==
   (*************************************************************************)
@@ -111,9 +108,22 @@ SBSoundness ==
   (*************************************************************************)
   (* Eventually, all processes recieve the message                         *)
   (*************************************************************************)
-                <> (\A p \in P: Terminated(p) = TRUE)
+               <> (\A p \in P: Terminated(p) = TRUE)
+
+\* BEGIN: Definitions for testing purposes
+\*TestInitState == [  p1 |->
+\*         <<TRUE, [p1 |-> FALSE, p2 |-> FALSE, p3 |-> FALSE], TRUE>>,
+\*                    p2 |->
+\*         <<FALSE, [p1 |-> FALSE, p2 |-> FALSE, p3 |-> FALSE], FALSE >>,
+\*                    p3 |-> 
+\*         <<FALSE, [p1 |-> FALSE, p2 |-> FALSE, p3 |-> FALSE], FALSE>> ]
+\*     
+\*TestDef1 == \E p \in P : TestInitState[p] = <<TRUE, [p1 |-> FALSE, p2 |-> TRUE, p3 |-> TRUE], TRUE>>
+\*TestDef2 == TestInitState["p1"][2] = [p1 |-> FALSE, p2 |-> TRUE, p3 |-> TRUE]
+\*TestDef3 == TestInitState["p1"][2]["p1"] = FALSE
+\* END: Definitions for testing purposes
 
 =============================================================================
 \* Modification History
-\* Last modified Tue Apr 15 17:34:22 IST 2025 by stanly
+\* Last modified Tue Apr 15 19:14:00 IST 2025 by stanly
 \* Created Thu Mar 06 16:45:20 IST 2025 by stanly

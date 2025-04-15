@@ -10,7 +10,7 @@ The model has four constants `P`, `ROOT`, `CHILDREN`, and `PARENT` that model th
 `CHILDREN` is a map mapping processes to their children
 `PARENT` is a map mapping processes to their parent.
 
-The definition `TypeOK` contains constraints for the above constants.
+The definition `SBConstOK` contains constraints for the above constants.
 
 A possible instantiation of the above parameters for the model is shown below:
 
@@ -30,3 +30,7 @@ The intuiton is to have two kind of actions:
 2. Computing a message in process `p` which consists of two parts, defined in `Compute(p)`:
     1. Transfer message from input buffer of `p` to the output buffer of `p` for each child.
     2. Mark process as terminated.
+
+## Comments
+1. Replaced Tuples with Records for ease of readability
+2. [Possible TLC bug?] The `SBSoundness` property must hold but TLC reports that it is violated. The property states that eventually every process will terminate which does hold in the every run of the model. However, while checking the property, TLC does not check the entire run, assumes that the run would stutter after an invalid state, and reports a violation.
