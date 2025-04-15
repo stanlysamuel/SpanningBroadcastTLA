@@ -54,10 +54,10 @@ InitTerminatedType == FALSE
 (* Definitions for a given process p (for reference) *)
 (***************************************************************************)
 
-Terminated(p) == configuration[p][3]
-Outbuf(p) == configuration[p][4]
-Inbuf(p) == configuration[p][5]
-OutbufQinP(p,q) == configuration[p][4][q] \* OutbufQinP(p,q) is true if process p has a message for process in q in the respective output buffer.
+Inbuf(p) == configuration[p][3]
+Terminated(p) == configuration[p][1]
+Outbuf(p) == configuration[p][2]
+OutbufQinP(p,q) == configuration[p][2][q] \* OutbufQinP(p,q) is true if process p has a message for process in q in the respective output buffer.
 
 SBTypeOK == 
   (*************************************************************************)
