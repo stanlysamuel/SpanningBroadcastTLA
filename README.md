@@ -30,3 +30,8 @@ The intuiton is to have two kind of actions:
 2. Computing a message in process `p` which consists of two parts, defined in `Compute(p)`:
     1. Transfer message from input buffer of `p` to the output buffer of `p` for each child.
     2. Mark process as terminated.
+
+
+## Comments on version 1
+
+TLC says stuttering when it should not. To figure out.
