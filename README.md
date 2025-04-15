@@ -34,4 +34,7 @@ The intuiton is to have two kind of actions:
 
 ## Comments on version 1
 
-TLC says stuttering when it should not. To figure out.
+1. TLC says stuttering when it should not. We need to figure out this bug.
+2. This version uses tuples which is not good for readability. Will use records instead.
+3. Need to separate variables from constants.
+4. Try the above example in different tools.
