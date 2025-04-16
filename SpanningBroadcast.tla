@@ -106,9 +106,16 @@ SBNext ==
 -----------------------------------------------------------------------------
 SBSoundness ==  
   (*************************************************************************)
-  (* Eventually, all processes recieve the message                         *)
+  (* Eventually, all processes recieve the message (liveness property on termination)                        *)
   (*************************************************************************)
                <> (\A p \in P: Terminated(p) = TRUE)
+
+-----------------------------------------------------------------------------
+SBNoTermination ==  
+  (*************************************************************************)
+  (* Invariant on non-termination                        *)
+  (*************************************************************************)
+               (\E p \in P: Terminated(p) = FALSE)
 
 \* BEGIN: Definitions for testing purposes
 \*TestInitState == [  p1 |->
