@@ -1,4 +1,4 @@
-# Spanning Broadcast Algorithm in TLA+
+# Spanning Broadcast Algorithm in TLA+ and Quint
 This repository hosts the model of the Spannning Broadcast Algorithm; Algorithm 1 in the book Distributed Computing by Attiya and Welch.
 
 ## Introduction 
@@ -34,3 +34,54 @@ The intuiton is to have two kind of actions:
 ## Comments
 1. Replaced Tuples with Records for ease of readability
 2. [Possible TLC bug?] The `SBSoundness` property must hold but TLC reports that it is violated. The property states that eventually every process will terminate which does hold in the every run of the model. However, while checking the property, TLC does not check the entire run, assumes that the run would stutter after an invalid state, and reports a violation.
+
+## The Quint model
+
+The file `spanningbroadcast.qnt` recreates the TLA+ model of the spanning broadcast algoirithm written in `SpanningBroadcast.tla`. 
+
+## Discussion
+
+In both models, there is an invariant property and a temporal property.
+
+### Invariant Property
+The invariant property states that it is always the case that some process never terminates. 
+In both models, this property is violated as expected.
+
+The invariant property in TLA+:
+```
+SBNoTermination ==  
+  (*************************************************************************)
+  (* Invariant on non-termination                        *)
+  (*************************************************************************)
+               (\E p \in P: Terminated(p) = FALSE)
+```
+The invariant property in Quint:
+
+```
+// Invariant on non-termination (Safety)
+val no_termination = P.exists(p => configuration.get(p).terminated == false)
+```
+
+### Temporal (Liveness) Property
+
+The invariant property states that eventually all processes terminates.
+
+The temporal property in TLA+:
+
+```
+SBSoundness ==  
+  (*************************************************************************)
+  (* Eventually, all processes recieve the message (liveness property on termination)                        *)
+  (*************************************************************************)
+               <> (\A p \in P: Terminated(p) = TRUE)
+```
+
+The temporal property in Quint:
+
+```
+// Invariant on termination (Liveness) [Note: Doesn't seem to be supported yet]
+temporal termination = eventually(P.forall(p => configuration.get(p).terminated == true))
+```
+
+In Quint, temporal properties does not seem to be supported yet.
+In TLA+, the TLC model checker returns a violation which should not be the case.
