@@ -64,7 +64,7 @@ val no_termination = P.exists(p => configuration.get(p).terminated == false)
 
 ### Temporal (Liveness) Property
 
-The invariant property states that eventually all processes terminates.
+The temporal property states that eventually all processes terminate.
 
 The temporal property in TLA+:
 
@@ -79,7 +79,7 @@ SBSoundness ==
 The temporal property in Quint:
 
 ```
-// Invariant on termination (Liveness) [Note: Doesn't seem to be supported yet]
+// Temporal property on termination (Liveness) [Note: Doesn't seem to be supported yet]
 temporal termination = eventually(P.forall(p => configuration.get(p).terminated == true))
 ```
 

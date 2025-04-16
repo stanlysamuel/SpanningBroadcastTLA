@@ -54,6 +54,6 @@ module spanningbroadcast {
 // Invariant on non-termination (Safety)
 val no_termination = P.exists(p => configuration.get(p).terminated == false)
 
-// Invariant on termination (Liveness) [Note: Doesn't seem to be supported yet]
+// Temporal property on termination (Liveness) [Note: Doesn't seem to be supported yet]
 temporal termination = eventually(P.forall(p => configuration.get(p).terminated == true))
 }
