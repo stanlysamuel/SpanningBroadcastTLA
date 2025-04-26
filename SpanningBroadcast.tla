@@ -7,6 +7,7 @@
 EXTENDS FiniteSets
 
 CONSTANT P, ROOT, CHILDREN, PARENT      \* The set of participating processes, the root, and the spanning tree as a directed graph (CHILDREN, PARENT)
+ASSUME CHILDREN \in [P -> SUBSET P] \* Each process has a set of children
 
 VARIABLE  configuration \* configuration[p] is the state of process p.
 -----------------------------------------------------------------------------
@@ -14,8 +15,8 @@ VARIABLE  configuration \* configuration[p] is the state of process p.
 (* Types (denoting the state of each process) *)
 (***************************************************************************)
 
-ParentType == (SUBSET P) \* empty set only in the case of root and singleton set otherwise
-ChildrenType == (SUBSET P) \* empty in the case of leaves and non-empty otherwise.
+ParentType == (SUBSET P) \* empty set only in the case of root; singleton set otherwise
+ChildrenType == (SUBSET P) \* empty in the case of leaves; non-empty otherwise.
 TerminatedType == BOOLEAN
 OutbufType == [P -> BOOLEAN]
 InbufType == BOOLEAN
@@ -88,14 +89,15 @@ SendFromPToQ(p,q) ==
                                 ![p].outbuf[q] = FALSE] \* outbuf[p][q] is false
 
 \* If an input buffer has a message, then mark a corresponding child's output buffer in the parent's node as TRUE
-Compute(p) == /\ configuration[p].inbuf = TRUE \* input buffer for p is true
-                /\ configuration' = 
-                    [configuration EXCEPT 
-                        ![p].outbuf = [q \in P |-> IF q \in CHILDREN[p] 
-                                                THEN TRUE 
-                                                ELSE FALSE], \* Store message in each output buffer of process p.
-                        ![p].terminated = TRUE, \* Mark p as terminated
-                        ![p].inbuf = FALSE] \* Mark input buffer as empty
+Compute(p) == 
+    /\ configuration[p].inbuf = TRUE \* input buffer for p is true
+    /\ configuration' = 
+        [configuration EXCEPT 
+            ![p].outbuf = [q \in P |-> IF q \in CHILDREN[p] 
+                                    THEN TRUE 
+                                    ELSE FALSE], \* Store message in each output buffer of process p.
+            ![p].terminated = TRUE, \* Mark p as terminated
+            ![p].inbuf = FALSE] \* Mark input buffer as empty
 
 SBNext ==
   (*************************************************************************)
